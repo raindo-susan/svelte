@@ -1,0 +1,66 @@
+import { promises as fs } from 'fs';
+import * as path from 'path';
+import type { RequestHandler } from '@sveltejs/kit';
+
+// Define the expected structure of the POST data
+interface PostData {
+  title: string;
+  content: string;
+  metadata: {
+    publishedAt: string;
+
+    [key: string]: any;
+  }
+}
+
+export const POST: RequestHandler<Record<string, never>, PostData> = async ({ request }) => {
+  try {
+    const { title, content, metadata } = await request.json() as PostData;
+
+    if (!title || !content || !metadata) {
+      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+    }
+
+    const slug = generateSlug(title);
+    const serializedMetadata = Object.entries(metadata).map(([key, value]) => {
+      return `${key}: ${typeof value === 'object' ? JSON.stringify(value) : value}`;
+    }).join('\n');
+
+    const markdownContent = `---
+${serializedMetadata}
+---
+${content}
+`;
+
+    const filePath = path.join('static', 'posts', `${slug}.md`);
+    await fs.writeFile(filePath, markdownContent, 'utf8');
+
+    return new Response(JSON.stringify({ success: true, slug }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    return new Response(JSON.stringify({ error: 'Could not create the post' }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+  }
+};
+
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[\s_]+/g, '-')
+    .replace(/[^\w-]+/g, '')
+    .replace(/^-+|-+$/g, '');
+}

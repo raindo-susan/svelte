@@ -1,0 +1,66 @@
+import { promises as fs } from 'fs';
+import * as path from 'path';
+import { json } from '@sveltejs/kit';
+
+export const POST = async ({ request }) => {
+  try {
+    const body = await request.json();
+    const { title, content, metadata } = body;
+
+    // Validate the incoming data
+    if (typeof title !== 'string' || typeof content !== 'string' || typeof metadata !== 'object') {
+      return new Response(JSON.stringify({ error: 'Missing or invalid fields' }), {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+    }
+
+    const slug = generateSlug(title);
+
+    // Serialize metadata to a string that can be used in the markdown frontmatter
+    const serializedMetadata = Object.entries(metadata).map(([key, value]) => {
+      if (typeof value === 'object') {
+        value = JSON.stringify(value);
+      }
+      return `${key}: ${value}`;
+    }).join('\n');
+
+    const markdownContent = `---
+${serializedMetadata}
+---
+${content}
+`;
+
+    // Define the path for the new file
+    const filePath = path.join('static', 'posts', `${slug}.md`);
+
+    // Write the file to the filesystem
+    await fs.writeFile(filePath, markdownContent, 'utf8');
+
+    // Return a success response
+    return new Response(JSON.stringify({ success: true, slug }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    return new Response(JSON.stringify({ error: 'Could not create the post' }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+  }
+};
+
+function generateSlug(title: string) {
+  return title
+    .toLowerCase()
+    .replace(/[\s_]+/g, '-')
+    .replace(/[^\w-]+/g, '')
+    .replace(/^-+|-+$/g, '');
+}
