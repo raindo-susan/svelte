@@ -1,6 +1,6 @@
 # My Dev Blog
 
-You can find more info about me here [My Researchgate] https://www.researchgate.net/profile/Pablo-Garcia-119
+You can find more info about me here [My Researchgate](https://www.researchgate.net/profile/Pablo-Garcia-119)
 
 ## Running this locally
 
