@@ -1,6 +1,6 @@
 # My Dev Blog
 
-This repo is very similar to my live production blog found here: [My Blog](https://josean.com)
+You can find more info about me here [My Researchgate] https://www.researchgate.net/profile/Pablo-Garcia-119
 
 ## Running this locally
 
